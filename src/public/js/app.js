@@ -1,10 +1,12 @@
 const socket = io();
 
 const myFace = document.getElementById("myFace");
-const muteBtn = document.getElementById("mute");
 const cameraBtn = document.getElementById("camera");
 const camerasSelect = document.getElementById("cameras");
 const call = document.getElementById("call");
+const peerFace = document.getElementById("peerFace");
+const cameraResolutionSelect = document.getElementById("resolutions");
+const peerResCheck = document.getElementById("peerResCheck");
 
 call.hidden = true;
 
@@ -15,6 +17,46 @@ let roomName;
 let myPeerConnection;
 let myDataChannel;
 
+// Use the "exact" keyword to use the exact camera resolution e.g. video: {width: {exact: 7680}, height: {exact: 4320}}
+const videoResolutionPresetJson = {
+  "SVGA (800×600)": {
+    video: {width: 800, height: 600}
+  },
+
+  "HD": {
+    video: {width: 1280, height: 720}
+  },
+
+  "FHD": {
+    video: {width: 1920, height: 1080}
+  },
+
+  "Phone (4000×3000)": {
+    video: {width: 4000, height: 3000}
+  },
+
+  "Phone (2208×2944)": {
+    video: {width: 2208, height: 2944}
+  },
+
+  "4K": {
+    video: {width: 3840, height: 720}
+  },
+
+  "8K": { 
+    video: {width: 7680, height: 4320}
+ }
+}
+
+async function initResolutionConfiguration() {
+  for (key in videoResolutionPresetJson) {
+    const option = document.createElement("option");
+    option.value = key;
+    option.innerText = key;
+    cameraResolutionSelect.appendChild(option);
+  }
+}
+
 async function getCameras() {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
@@ -24,9 +66,6 @@ async function getCameras() {
       const option = document.createElement("option");
       option.value = camera.deviceId;
       option.innerText = camera.label;
-      if (currentCamera.label === camera.label) {
-        option.selected = true;
-      }
       camerasSelect.appendChild(option);
     });
   } catch (e) {
@@ -34,20 +73,36 @@ async function getCameras() {
   }
 }
 
-async function getMedia(deviceId) {
+async function getMedia(deviceId, resConstraint) {
   const initialConstrains = {
-    audio: true,
-    video: { facingMode: "user" },
+    audio: false,
+    video: { width: {ideal: 1920}, height: {ideal: 1080}, facingMode: "environment" },
   };
   const cameraConstraints = {
-    audio: true,
-    video: { deviceId: { exact: deviceId } },
+    audio: false,
+    video: { width: {ideal: 1920}, height: {ideal: 1080}, deviceId: { exact: deviceId } },
   };
   try {
-    myStream = await navigator.mediaDevices.getUserMedia(
-      deviceId ? cameraConstraints : initialConstrains
-    );
+    let constraint;
+    if (resConstraint !== undefined) {
+      resConstraint.video.deviceId = {exact: camerasSelect.value};
+      constraint = resConstraint;
+    } else if (deviceId) {
+      constraint = cameraConstraints;
+    } else {
+      constraint = initialConstrains;
+    }
+
+    myStream = await navigator.mediaDevices.getUserMedia(constraint);
     myFace.srcObject = myStream;
+
+    if(myPeerConnection) {
+      const videoTrack = myStream.getVideoTracks()[0];
+      const videoSender = myPeerConnection
+        .getSenders()
+        .find((sender) => sender.track.kind === "video");
+      videoSender.replaceTrack(videoTrack);
+    }
     if (!deviceId) {
       await getCameras();
     }
@@ -92,9 +147,23 @@ async function handleCameraChange() {
   }
 }
 
-muteBtn.addEventListener("click", handleMuteClick);
+  async function handleCameraResolutionChange() {
+    const constraint = videoResolutionPresetJson[cameraResolutionSelect.value];
+    myStream.getVideoTracks().forEach((track) => {track.stop()});
+    const deviceId = camerasSelect.value
+
+    getMedia(deviceId, constraint)
+}
+
 cameraBtn.addEventListener("click", handleCameraClick);
 camerasSelect.addEventListener("input", handleCameraChange);
+cameraResolutionSelect.addEventListener("input", handleCameraResolutionChange);
+myFace.addEventListener('loadedmetadata', function() {
+  console.log(`Local video videoWidth: ${this.videoWidth}px,  videoHeight: ${this.videoHeight}px`);
+});
+peerResCheck.addEventListener("click", function() {
+  console.log(`Peer video videoWidth: ${this.videoWidth}px,  videoHeight: ${this.videoHeight}px`);
+});
 
 // Welcome Form (join a room)
 
@@ -106,6 +175,7 @@ async function initCall() {
   call.hidden = false;
   await getMedia();
   makeConnection();
+  await initResolutionConfiguration();
 }
 
 async function handleWelcomeSubmit(event) {
@@ -174,6 +244,17 @@ function makeConnection() {
   });
   myPeerConnection.addEventListener("icecandidate", handleIce);
   myPeerConnection.addEventListener("addstream", handleAddStream);
+  myPeerConnection.addEventListener("connectionstatechange", (event) => {
+    switch (myPeerConnection.connectionState) {
+      case "new":
+      case "checking":
+      case "connected":
+      case "disconnected":
+      case "closed":
+      case "failed": break;
+      default: console.log("myPeerConnection state: Unknown"); break;
+    }
+  })
   myStream
     .getTracks()
     .forEach((track) => myPeerConnection.addTrack(track, myStream));
@@ -185,6 +266,5 @@ function handleIce(data) {
 }
 
 function handleAddStream(data) {
-  const peerFace = document.getElementById("peerFace");
   peerFace.srcObject = data.stream;
 }

@@ -4,11 +4,11 @@ html(lang="en")
         meta(charset="UTF-8")
         meta(http-equiv="X-UA-Compatible", content="IE=edge")
         meta(name="viewport", content="width=device-width, initial-scale=1.0")
-        title Noom
+        title Camera Server
         link(rel="stylesheet", href="https://unpkg.com/mvp.css")
     body
         header
-            h1 Noom
+            h1 Camera Server
         main
             div#welcome
                 form    
@@ -16,10 +16,11 @@ html(lang="en")
                     button Enter room
             div#call
                 div#myStream
-                    video#myFace(autoplay,playsinline, width="400", height="400")
-                    button#mute Mute
+                    video#myFace(autoplay,playsinline, width="1280", height="720")
                     button#camera Turn Camera Off
                     select#cameras
-                    video#peerFace(autoplay,playsinline, width="400", height="400")
+                    select#resolutions
+                    button#peerResCheck Check Peer's Camera Resolution
+                    video#peerFace(autoplay,playsinline, width="1280", height="720")
         script(src="/socket.io/socket.io.js") 
         script(src="/public/js/app.js") 
