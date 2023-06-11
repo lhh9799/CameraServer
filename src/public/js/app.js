@@ -7,6 +7,12 @@ const call = document.getElementById("call");
 const peerFace = document.getElementById("peerFace");
 const cameraResolutionSelect = document.getElementById("resolutions");
 const peerResCheck = document.getElementById("peerResCheck");
+const enterDiv = document.getElementById("noname");
+const enterButton = document.getElementById("Enter");
+const screenShare = document.getElementById("screenShare");
+const screen = document.getElementById("screen");
+const videoPlay = document.getElementById("videoPlay");
+const LocalVideo = document.getElementById("LocalVideo");
 
 call.hidden = true;
 
@@ -20,31 +26,31 @@ let myDataChannel;
 // Use the "exact" keyword to use the exact camera resolution e.g. video: {width: {exact: 7680}, height: {exact: 4320}}
 const videoResolutionPresetJson = {
   "SVGA (800×600)": {
-    video: {width: 800, height: 600}
+    video: {frameRate: {min: 30}, width: 800, height: 600}
   },
 
   "HD": {
-    video: {width: 1280, height: 720}
+    video: {frameRate: {min: 30}, width: 1280, height: 720}
   },
 
   "FHD": {
-    video: {width: 1920, height: 1080}
+    video: {frameRate: {min: 30}, width: 1920, height: 1080}
   },
 
   "Phone (4000×3000)": {
-    video: {width: 4000, height: 3000}
+    video: {frameRate: {min: 30}, width: 4000, height: 3000}
   },
 
   "Phone (2208×2944)": {
-    video: {width: 2208, height: 2944}
+    video: {frameRate: {min: 30}, width: 2208, height: 2944}
   },
 
   "4K": {
-    video: {width: 3840, height: 720}
+    video: {frameRate: {min: 30}, width: 3840, height: 720}
   },
 
   "8K": { 
-    video: {width: 7680, height: 4320}
+    video: {frameRate: {min: 30}, width: 7680, height: 4320}
  }
 }
 
@@ -61,7 +67,6 @@ async function getCameras() {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
     const cameras = devices.filter((device) => device.kind === "videoinput");
-    const currentCamera = myStream.getVideoTracks()[0];
     cameras.forEach((camera) => {
       const option = document.createElement("option");
       option.value = camera.deviceId;
@@ -76,11 +81,11 @@ async function getCameras() {
 async function getMedia(deviceId, resConstraint) {
   const initialConstrains = {
     audio: false,
-    video: { width: {ideal: 1920}, height: {ideal: 1080}, facingMode: "environment" },
+    video: { frameRate: {min: 30}, width: {ideal: 1920}, height: {ideal: 1080}, facingMode: "environment" },
   };
   const cameraConstraints = {
     audio: false,
-    video: { width: {ideal: 1920}, height: {ideal: 1080}, deviceId: { exact: deviceId } },
+    video: { frameRate: {min: 30}, width: {ideal: 1920}, height: {ideal: 1080}, deviceId: { exact: deviceId } },
   };
   try {
     let constraint;
@@ -93,7 +98,12 @@ async function getMedia(deviceId, resConstraint) {
       constraint = initialConstrains;
     }
 
+    
     myStream = await navigator.mediaDevices.getUserMedia(constraint);
+    //Screen Sharing Codes
+    // myStream = await navigator.mediaDevices.getDisplayMedia(
+      // displayMediaOptions
+    // );
     myFace.srcObject = myStream;
 
     if(myPeerConnection) {
@@ -123,6 +133,7 @@ function handleMuteClick() {
     muted = false;
   }
 }
+
 function handleCameraClick() {
   myStream
     .getVideoTracks()
@@ -147,22 +158,30 @@ async function handleCameraChange() {
   }
 }
 
-  async function handleCameraResolutionChange() {
-    const constraint = videoResolutionPresetJson[cameraResolutionSelect.value];
-    myStream.getVideoTracks().forEach((track) => {track.stop()});
-    const deviceId = camerasSelect.value
+async function handleCameraResolutionChange() {
+  const constraint = videoResolutionPresetJson[cameraResolutionSelect.value];
+  myStream.getVideoTracks().forEach((track) => {track.stop()});
+  const deviceId = camerasSelect.value
 
-    getMedia(deviceId, constraint)
+  getMedia(deviceId, constraint)
 }
 
 cameraBtn.addEventListener("click", handleCameraClick);
 camerasSelect.addEventListener("input", handleCameraChange);
 cameraResolutionSelect.addEventListener("input", handleCameraResolutionChange);
+enterButton.addEventListener("click", () => handleWithoutPasswordWelcomeSubmit())
 myFace.addEventListener('loadedmetadata', function() {
   console.log(`Local video videoWidth: ${this.videoWidth}px,  videoHeight: ${this.videoHeight}px`);
 });
-peerResCheck.addEventListener("click", function() {
-  console.log(`Peer video videoWidth: ${this.videoWidth}px,  videoHeight: ${this.videoHeight}px`);
+screen.addEventListener(
+  "click",
+  (evt) => {
+    startCapture();
+  },
+  false
+);
+videoPlay.addEventListener("click", () => {
+  LocalVideo.play();
 });
 
 // Welcome Form (join a room)
@@ -172,6 +191,7 @@ const welcomeForm = welcome.querySelector("form");
 
 async function initCall() {
   welcome.hidden = true;
+  LocalVideo.hidden = true;
   call.hidden = false;
   await getMedia();
   makeConnection();
@@ -185,6 +205,12 @@ async function handleWelcomeSubmit(event) {
   socket.emit("join_room", input.value);
   roomName = input.value;
   input.value = "";
+}
+
+async function handleWithoutPasswordWelcomeSubmit(event) {
+  await initCall();
+  roomName = "publicRoom";
+  socket.emit("join_room", roomName);
 }
 
 welcomeForm.addEventListener("submit", handleWelcomeSubmit);
@@ -226,6 +252,10 @@ socket.on("ice", (ice) => {
   myPeerConnection.addIceCandidate(ice);
 });
 
+socket.on("streamIndex", (streamIndex) => {
+
+});
+
 // RTC Code
 
 function makeConnection() {
@@ -246,12 +276,12 @@ function makeConnection() {
   myPeerConnection.addEventListener("addstream", handleAddStream);
   myPeerConnection.addEventListener("connectionstatechange", (event) => {
     switch (myPeerConnection.connectionState) {
-      case "new":
-      case "checking":
-      case "connected":
-      case "disconnected":
-      case "closed":
-      case "failed": break;
+      case "new": console.log("myPeerConnection state: new"); break;
+      case "checking": console.log("myPeerConnection state: checking"); break;
+      case "connected": socket.emit("connected");  console.log("myPeerConnection state: connected"); break;
+      case "disconnected": socket.emit("disconnected");  console.log("myPeerConnection state: disconnected"); break;
+      case "closed": console.log("myPeerConnection state: closed"); break;
+      case "failed": console.log("myPeerConnection state: failed"); break;
       default: console.log("myPeerConnection state: Unknown"); break;
     }
   })
@@ -266,5 +296,13 @@ function handleIce(data) {
 }
 
 function handleAddStream(data) {
+  console.log("data");
+  console.log(data);
+  console.log("data.stream");
+  console.log(data.stream);
+  console.log("peerFace.srcObject 1");
+  console.log(peerFace.srcObject);
   peerFace.srcObject = data.stream;
+  console.log("peerFace.srcObject 2");
+  console.log(peerFace.srcObject);
 }

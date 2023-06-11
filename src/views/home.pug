@@ -10,6 +10,11 @@ html(lang="en")
         header
             h1 Camera Server
         main
+            div#noname
+                button#Enter Enter Without Password
+                button#SampleButton SampleButton
+                button#videoPlay VideoPlay
+                video#LocalVideo(src="/public/testVideo.mp4", controls, playsinline, width="1280", height="720")
             div#welcome
                 form    
                     input(placeholder="room name", required, type="text")
@@ -22,5 +27,7 @@ html(lang="en")
                     select#resolutions
                     button#peerResCheck Check Peer's Camera Resolution
                     video#peerFace(autoplay,playsinline, width="1280", height="720")
+            div#screenShare
+                video#screen(autoplay,playsinline, width="1280", height="720")
         script(src="/socket.io/socket.io.js") 
         script(src="/public/js/app.js") 
