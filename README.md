@@ -1,14 +1,23 @@
 ![GitHub](https://img.shields.io/github/license/lhh9799/CameraServer)
-![](https://img.shields.io/badge/status-In%20Progress-blue)
+![](https://img.shields.io/badge/status-terminated-red)
 
-# CameraServer
-A Camera Server that utilizes NodeJS, WebRTC and Socket.IO.
+# Video Call Server
+A P2P Video Call Server that utilizes NodeJS, WebRTC and Socket.IO.
 
 # Table of Contents
+* [Demo](#Demo)
 * [Verified Environment](#verified-environment)
 * [Installation](#installation)
 * [How to run](#how-to-run)
 
+# Demo
+    Make sure to enter your own domain address. "cana.p-e.kr" is an example.
+
+<center class="half">
+  <a href="link"><img src="https://github.com/lhh9799/CameraServer/assets/77262005/338fb048-7b05-42de-9675-41d4d618b3ce" height = "600"></a>
+  <a href="link"><img src="https://github.com/lhh9799/CameraServer/assets/77262005/07ec8bbb-0980-4565-8ac3-e7dd4eb52414" height = "600"></a>
+</center>
+    
 # Verified Environment
     Windows 10 Pro
     Version 22H2

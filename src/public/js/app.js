@@ -6,13 +6,7 @@ const camerasSelect = document.getElementById("cameras");
 const call = document.getElementById("call");
 const peerFace = document.getElementById("peerFace");
 const cameraResolutionSelect = document.getElementById("resolutions");
-const peerResCheck = document.getElementById("peerResCheck");
-const enterDiv = document.getElementById("noname");
-const enterButton = document.getElementById("Enter");
-const screenShare = document.getElementById("screenShare");
-const screen = document.getElementById("screen");
-const videoPlay = document.getElementById("videoPlay");
-const LocalVideo = document.getElementById("LocalVideo");
+// const enterButton = document.getElementById("Enter");
 
 call.hidden = true;
 
@@ -98,12 +92,11 @@ async function getMedia(deviceId, resConstraint) {
       constraint = initialConstrains;
     }
 
-    
-    myStream = await navigator.mediaDevices.getUserMedia(constraint);
     //Screen Sharing Codes
-    // myStream = await navigator.mediaDevices.getDisplayMedia(
-      // displayMediaOptions
-    // );
+    /*myStream = await navigator.mediaDevices.getDisplayMedia(
+      displayMediaOptions
+    );*/
+    myStream = await navigator.mediaDevices.getUserMedia(constraint);
     myFace.srcObject = myStream;
 
     if(myPeerConnection) {
@@ -169,7 +162,7 @@ async function handleCameraResolutionChange() {
 cameraBtn.addEventListener("click", handleCameraClick);
 camerasSelect.addEventListener("input", handleCameraChange);
 cameraResolutionSelect.addEventListener("input", handleCameraResolutionChange);
-enterButton.addEventListener("click", () => handleWithoutPasswordWelcomeSubmit())
+// enterButton.addEventListener("click", () => handleWithoutPasswordWelcomeSubmit())
 myFace.addEventListener('loadedmetadata', function() {
   console.log(`Local video videoWidth: ${this.videoWidth}px,  videoHeight: ${this.videoHeight}px`);
 });
@@ -180,9 +173,23 @@ screen.addEventListener(
   },
   false
 );
-videoPlay.addEventListener("click", () => {
-  LocalVideo.play();
+/* 작동 안함
+mr.addEventListener("onDataAvailable", (event) => {
+  videoArray.push(event.data);
 });
+mr.addEventListener("onStop", (event) => {
+  // 녹음이 종료되면, 배열에 담긴 오디오 데이터(Blob)들을 합친다: 코덱도 설정해준다.
+  const blob = new Blob(audioArray, {"type": "audio/ogg codecs=opus"});
+  audioArray.splice(0); // 기존 오디오 데이터들은 모두 비워 초기화한다.
+  
+  // Blob 데이터에 접근할 수 있는 객체URL을 생성한다.
+  const blobURL = window.URL.createObjectURL(blob);
+
+  // audio엘리먼트로 재생한다.
+  $audioEl.src = blobURL;
+  $audioEl.play();
+});
+*/
 
 // Welcome Form (join a room)
 
@@ -191,7 +198,6 @@ const welcomeForm = welcome.querySelector("form");
 
 async function initCall() {
   welcome.hidden = true;
-  LocalVideo.hidden = true;
   call.hidden = false;
   await getMedia();
   makeConnection();
@@ -296,13 +302,5 @@ function handleIce(data) {
 }
 
 function handleAddStream(data) {
-  console.log("data");
-  console.log(data);
-  console.log("data.stream");
-  console.log(data.stream);
-  console.log("peerFace.srcObject 1");
-  console.log(peerFace.srcObject);
   peerFace.srcObject = data.stream;
-  console.log("peerFace.srcObject 2");
-  console.log(peerFace.srcObject);
 }
